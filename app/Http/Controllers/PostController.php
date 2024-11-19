@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
@@ -14,29 +15,13 @@ class PostController extends Controller
      */
     public function index()
     {
-        // $view_data = [
-        //     'posts' => "Ini postingan.",
-        //     'comments' => "Ini komentar."
-        // ];
-
-        // $view_data = [
-        //     'posts' => ['satu', 'dua', 'tiga', 'empat', 'lima']
-        // ];
-
-        // $view_data = [
-        //     'posts' => [
-        //         // Title            Content
-        //         ["Mengenal Laravel", "Ini adalah blog tentang Laravel"],
-        //         ["Mengapa PHP?", "PHP adalah bahasa pemrograman yang populer"]
-        //     ]
-        // ];
-
-        $posts = Storage::get('posts.txt');
-        $posts = explode("\n", $posts);
+        $posts = DB::table('posts')
+                    ->select('id', 'title', 'content', 'created_at')
+                    ->where('active', true)
+                    ->get();
         // dd($posts);
-
         $view_data = [
-            'posts' => $posts
+            'posts' => $posts,
         ];
 
         return view('posts.index', $view_data); // posts.index (posts adalah nama folder, index adalah nama file)
@@ -64,27 +49,12 @@ class PostController extends Controller
         $title = $request->input('title'); // name=title yang ada di form create.blade.php
         $content = $request->input('content'); // name=content yang ada di form create.blade.php
 
-        // dibaca data terbaru
-        $posts = Storage::get('posts.txt');
-        $posts = explode("\n", $posts);
-
-        // tambah data baru
-        $new_post = [
-            count($posts) + 1,
-            $title,
-            $content,
-            date('Y-m-d H:i:s')
-        ];
-
-        // menggabungkan array menjadi satu string
-        $new_post = implode(",", $new_post);
-        // dd($new_post);
-
-        array_push($posts, $new_post); // menambahkan data baru ke dalam array $posts
-        $posts = implode("\n", $posts); // menggabungkan array $posts menjadi string dengan pemisah baris baru
-        // dd($posts);
-
-        Storage::write('posts.txt', $posts); // menulis data baru ke dalam file posts.txt
+        DB::table('posts')->insert([
+            'title' => $title,
+            'content' => $content,
+            'created_at' => date('Y-m-d H:i:s'), // kapan tgl ditambahkan
+            'updated_at' => date('Y-m-d H:i:s'), // kapan tgl diubah
+        ]);
 
         return redirect('posts'); // redirect ke halaman posts setelah data berhasil ditambahkan
     }
@@ -97,20 +67,13 @@ class PostController extends Controller
      */
     public function show($id)
     {
-        // echo "Halaman detail dari post dengan ID: $id";
+        $post = DB::table('posts')
+            ->select('id', 'title', 'content', 'created_at')
+            ->where('id', $id) // SELECT * FROM posts WHERE id = $id
+            ->first(); // first berfungsi untuk mendapatkan data pertama dari atasnya
 
-        $posts = Storage::get('posts.txt');
-        $posts = explode("\n", $posts);
-        $selected_post = Array();
-        
-        foreach($posts as $post){
-            $post = explode(",", $post);
-            if($post[0] == $id) {
-                $selected_post = $post;
-            }
-        }
         $view_data = [
-            'post' => $selected_post
+            'post' => $post
         ];
         return view('posts.show', $view_data);
     }
@@ -123,7 +86,16 @@ class PostController extends Controller
      */
     public function edit($id)
     {
-        //
+        $post = DB::table('posts')
+            ->select('id', 'title', 'content', 'created_at')
+            ->where('id', $id)
+            ->first();
+
+        $view_data = [
+            'post' => $post
+        ];
+
+        return view('posts.edit', $view_data);
     }
 
     /**
@@ -135,7 +107,18 @@ class PostController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        $title = $request->input('title');
+        $content = $request->input('content');
+
+        DB::table('posts')
+            ->where('id', $id) // secara default operator yang digunakan yaitu sama dengan (=)
+            ->update([
+                'title' => $title,
+                'content' => $content,
+                'updated_at' => date('Y-m-d H:i:s'), // kapan tgl diubah
+            ]);
+
+        return redirect("posts/{$id}");
     }
 
     /**
@@ -146,6 +129,10 @@ class PostController extends Controller
      */
     public function destroy($id)
     {
-        //
+        DB::table('posts')
+        ->where('id', $id)
+        ->delete();
+
+        return redirect('posts');
     }
 }
