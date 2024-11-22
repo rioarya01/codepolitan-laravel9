@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -15,16 +16,11 @@ class PostController extends Controller
      */
     public function index()
     {
-        $posts = DB::table('posts')
-                    ->select('id', 'title', 'content', 'created_at')
-                    ->where('active', true)
-                    ->get();
-        // dd($posts);
+        $posts = Post::active()->get();
         $view_data = [
             'posts' => $posts,
         ];
-
-        return view('posts.index', $view_data); // posts.index (posts adalah nama folder, index adalah nama file)
+        return view('posts.index', $view_data);
     }
 
     /**
@@ -34,7 +30,7 @@ class PostController extends Controller
      */
     public function create()
     {
-        return view('posts.create'); //  disini hanya menampilkan form saja
+        return view('posts.create');
     }
 
     /**
@@ -45,18 +41,14 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        // disini proses form akan dijalankan
-        $title = $request->input('title'); // name=title yang ada di form create.blade.php
-        $content = $request->input('content'); // name=content yang ada di form create.blade.php
+        $title = $request->input('title'); 
+        $content = $request->input('content');
 
-        DB::table('posts')->insert([
+        Post::create([
             'title' => $title,
             'content' => $content,
-            'created_at' => date('Y-m-d H:i:s'), // kapan tgl ditambahkan
-            'updated_at' => date('Y-m-d H:i:s'), // kapan tgl diubah
         ]);
-
-        return redirect('posts'); // redirect ke halaman posts setelah data berhasil ditambahkan
+        return redirect('posts');
     }
 
     /**
@@ -67,13 +59,14 @@ class PostController extends Controller
      */
     public function show($id)
     {
-        $post = DB::table('posts')
-            ->select('id', 'title', 'content', 'created_at')
-            ->where('id', $id) // SELECT * FROM posts WHERE id = $id
-            ->first(); // first berfungsi untuk mendapatkan data pertama dari atasnya
+        $post = Post::where('id', $id)->first();
+        $comments = $post->comments()->limit(2)->get();
+        $total_comments = $post->total_comments();
 
         $view_data = [
-            'post' => $post
+            'post' => $post,
+            'comments' => $comments,
+            'total_comments' => $total_comments,
         ];
         return view('posts.show', $view_data);
     }
@@ -86,15 +79,10 @@ class PostController extends Controller
      */
     public function edit($id)
     {
-        $post = DB::table('posts')
-            ->select('id', 'title', 'content', 'created_at')
-            ->where('id', $id)
-            ->first();
-
+        $post = Post::where('id', $id)->first();
         $view_data = [
             'post' => $post
         ];
-
         return view('posts.edit', $view_data);
     }
 
@@ -110,14 +98,12 @@ class PostController extends Controller
         $title = $request->input('title');
         $content = $request->input('content');
 
-        DB::table('posts')
-            ->where('id', $id) // secara default operator yang digunakan yaitu sama dengan (=)
+        Post::where('id', $id)
             ->update([
                 'title' => $title,
                 'content' => $content,
-                'updated_at' => date('Y-m-d H:i:s'), // kapan tgl diubah
+                'updated_at' => date('Y-m-d H:i:s'),
             ]);
-
         return redirect("posts/{$id}");
     }
 
@@ -129,10 +115,7 @@ class PostController extends Controller
      */
     public function destroy($id)
     {
-        DB::table('posts')
-        ->where('id', $id)
-        ->delete();
-
+        Post::where('id', $id)->delete();
         return redirect('posts');
     }
 }
