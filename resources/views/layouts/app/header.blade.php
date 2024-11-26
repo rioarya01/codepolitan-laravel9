@@ -2,11 +2,16 @@
     <div class="container">
         <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
             <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
-                <li><a href="#" class="nav-link px-2 text-secondary">Home</a></li>
+                <li><a href="{{ url('posts') }}" class="nav-link px-2 text-secondary">Home</a></li>
             </ul>
 
             <div class="text-end">
-                <button type="button" class="btn btn-outline-light me-2">Login</button>
+                @if(Auth::check()) {{-- jika sudah login tampilkan logout --}}
+                    <a href="{{ url('logout') }}" class="btn btn-outline-light me-2">Logout</a>
+                @else {{-- jika belum login tampilkan login & register --}}
+                    <a href="{{ url('register') }}" class="btn btn-outline-light me-2">Register</a>
+                    <a href="{{ url('login') }}" class="btn btn-outline-light me-2">Login</a>
+                @endif
             </div>
         </div>
     </div>
